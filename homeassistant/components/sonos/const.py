@@ -124,11 +124,16 @@ PLAYABLE_MEDIA_TYPES = [
     MEDIA_TYPE_TRACK,
 ]
 
+SONOS_CONTENT_UPDATE = "sonos_content_update"
 SONOS_DISCOVERY_UPDATE = "sonos_discovery_update"
+SONOS_ENTITY_UPDATE = "sonos_entity_update"
 SONOS_GROUP_UPDATE = "sonos_group_update"
+SONOS_MEDIA_UPDATE = "sonos_media_update"
 SONOS_PROPERTIES_UPDATE = "sonos_properties_update"
+SONOS_PLAYER_RECONNECTED = "sonos_player_reconnected"
+SONOS_STATE_UPDATED = "sonos_state_updated"
+SONOS_VOLUME_UPDATE = "sonos_properties_update"
 SONOS_SEEN = "sonos_seen"
-SONOS_UNSEEN = "sonos_unseen"
 
 BATTERY_SCAN_INTERVAL = datetime.timedelta(minutes=15)
 SCAN_INTERVAL = datetime.timedelta(seconds=10)

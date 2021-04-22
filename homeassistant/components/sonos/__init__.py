@@ -29,12 +29,11 @@ from .const import (
     DATA_SONOS,
     DISCOVERY_INTERVAL,
     DOMAIN,
-    SEEN_EXPIRE_TIME,
     SONOS_DISCOVERY_UPDATE,
     SONOS_GROUP_UPDATE,
     SONOS_SEEN,
-    SONOS_UNSEEN,
 )
+from .speaker import SonosSpeaker
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,12 +69,10 @@ class SonosData:
     def __init__(self):
         """Initialize the data."""
         self.discovered = {}
-        self.speaker_info = {}
         self.media_player_entities = {}
         self.topology_condition = asyncio.Condition()
         self.discovery_thread = None
         self.hosts_heartbeat = None
-        self.seen_timers = {}
 
 
 async def async_setup(hass, config):
@@ -130,30 +127,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
                 if soco.uid not in data.discovered:
                     _LOGGER.debug("Adding new entity")
-                    data.discovered[soco.uid] = soco
-                    # Set these early since device_info() needs them
-                    data.speaker_info[soco.uid] = soco.get_speaker_info(True)
-
-                    dispatcher_send(hass, SONOS_DISCOVERY_UPDATE, soco)
+                    speaker = SonosSpeaker(hass, soco)
+                    data.discovered[soco.uid] = speaker
+                    dispatcher_send(hass, SONOS_DISCOVERY_UPDATE, speaker)
                 else:
                     dispatcher_send(hass, f"{SONOS_SEEN}-{soco.uid}", soco)
 
-                # watch for this soco to become unavailable
-                seen_timers = data.seen_timers
-                if soco.uid in seen_timers:
-                    seen_timers[soco.uid]()
-                seen_timers[soco.uid] = hass.helpers.event.async_call_later(
-                    SEEN_EXPIRE_TIME.total_seconds(), lambda: _disappeared_player(soco)
-                )
-
             except SoCoException as ex:
                 _LOGGER.debug("SoCoException, ex=%s", ex)
-
-        def _disappeared_player(soco: SoCo) -> None:
-            """Handle a player that has disappeared."""
-            data = hass.data[DATA_SONOS]
-            del data.seen_timers[soco.uid]
-            dispatcher_send(hass, f"{SONOS_UNSEEN}-{soco.uid}")
 
         if hosts:
             for host in hosts:
