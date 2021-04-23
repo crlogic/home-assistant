@@ -452,7 +452,7 @@ class SonosMediaPlayerEntity(SonosEntity, MediaPlayerEntity):
 
     async def async_reconnect_player(self) -> None:
         """Set basic information when player is reconnected."""
-        self.hass.async_add_executor_job(self._reconnect_player)
+        await self.hass.async_add_executor_job(self._reconnect_player)
 
     def _reconnect_player(self) -> None:
         """Set basic information when player is reconnected."""
