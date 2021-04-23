@@ -1,6 +1,7 @@
 """Const for Sonos."""
 import datetime
 
+from homeassistant.components.media_player import DOMAIN as MP_DOMAIN
 from homeassistant.components.media_player.const import (
     MEDIA_CLASS_ALBUM,
     MEDIA_CLASS_ARTIST,
@@ -17,9 +18,11 @@ from homeassistant.components.media_player.const import (
     MEDIA_TYPE_PLAYLIST,
     MEDIA_TYPE_TRACK,
 )
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 
 DOMAIN = "sonos"
 DATA_SONOS = "sonos_media_player"
+PLATFORMS = {MP_DOMAIN, SENSOR_DOMAIN}
 
 SONOS_ARTIST = "artists"
 SONOS_ALBUM = "albums"

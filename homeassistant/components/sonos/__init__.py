@@ -15,7 +15,6 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.components.media_player import DOMAIN as MP_DOMAIN
-from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_HOSTS,
@@ -30,6 +29,7 @@ from .const import (
     DATA_SONOS,
     DISCOVERY_INTERVAL,
     DOMAIN,
+    PLATFORMS,
     SONOS_GROUP_UPDATE,
     SONOS_SEEN,
 )
@@ -39,8 +39,6 @@ _LOGGER = logging.getLogger(__name__)
 
 CONF_ADVERTISE_ADDR = "advertise_addr"
 CONF_INTERFACE_ADDR = "interface_addr"
-
-PLATFORMS = {MP_DOMAIN, SENSOR_DOMAIN}
 
 
 CONFIG_SCHEMA = vol.Schema(
