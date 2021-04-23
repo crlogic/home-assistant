@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+from functools import partial
 import logging
 import socket
 
@@ -40,7 +41,7 @@ _LOGGER = logging.getLogger(__name__)
 CONF_ADVERTISE_ADDR = "advertise_addr"
 CONF_INTERFACE_ADDR = "interface_addr"
 
-PLATFORMS = [MP_DOMAIN, SENSOR_DOMAIN]
+PLATFORMS = {MP_DOMAIN, SENSOR_DOMAIN}
 
 
 CONFIG_SCHEMA = vol.Schema(
@@ -73,6 +74,7 @@ class SonosData:
         self.topology_condition = asyncio.Condition()
         self.discovery_thread = None
         self.hosts_heartbeat = None
+        self.platforms_ready = set()
 
 
 async def async_setup(hass, config):
@@ -168,15 +170,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     def _async_signal_update_groups(event):
         async_dispatcher_send(hass, SONOS_GROUP_UPDATE)
 
-    # register the entity classes
-    for platform in PLATFORMS:
-        hass.async_create_task(
-            hass.config_entries.async_forward_entry_setup(entry, platform)
+    @callback
+    def start_discovery():
+        _LOGGER.debug("Adding discovery job")
+        hass.async_add_executor_job(_discovery)
+        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _stop_discovery)
+        hass.bus.async_listen_once(
+            EVENT_HOMEASSISTANT_START, _async_signal_update_groups
         )
 
-    _LOGGER.debug("Adding discovery job")
-    hass.async_add_executor_job(_discovery)
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _stop_discovery)
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, _async_signal_update_groups)
+    @callback
+    def platform_ready(platform, _):
+        hass.data[DATA_SONOS].platforms_ready.add(platform)
+        if hass.data[DATA_SONOS].platforms_ready == PLATFORMS:
+            start_discovery()
+
+    for platform in PLATFORMS:
+        task = hass.async_create_task(
+            hass.config_entries.async_forward_entry_setup(entry, platform)
+        )
+        task.add_done_callback(partial(platform_ready, platform))
 
     return True
