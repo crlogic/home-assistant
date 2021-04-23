@@ -152,7 +152,8 @@ async def async_setup_entry(
     """Set up Sonos from a config entry."""
     platform = entity_platform.current_platform.get()
 
-    async def async_create_entities(speaker: SonosSpeaker) -> None:
+    @callback
+    def async_create_entities(speaker: SonosSpeaker) -> None:
         """Handle device discovery and create entities."""
         async_add_entities([SonosMediaPlayerEntity(speaker, hass.data[DATA_SONOS])])
 
@@ -709,7 +710,7 @@ class SonosMediaPlayerEntity(SonosEntity, MediaPlayerEntity):
                     # pylint: disable=protected-access
                     slave._coordinator = self
                     slave._sonos_group = sonos_group
-                    slave.async_schedule_update_ha_state()
+                    slave.async_write_ha_state()
 
         async def _async_handle_group_event(event: SonosEvent) -> None:
             """Get async lock and handle event."""
