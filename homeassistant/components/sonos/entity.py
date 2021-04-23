@@ -11,7 +11,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
 
 from . import SonosData
-from .const import SONOS_ENTITY_UPDATE, SONOS_SEEN, SONOS_STATE_UPDATED
+from .const import SONOS_ENTITY_UPDATE, SONOS_STATE_UPDATED
 from .speaker import SonosSpeaker
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,12 +43,6 @@ class SonosEntity(Entity):
                 self.async_write_state,
             )
         )
-
-        if not self.speaker._seen_dispatcher:
-            self.speaker._seen_dispatcher = async_dispatcher_connect(
-                self.hass, f"{SONOS_SEEN}-{self.soco.uid}", self.speaker.async_seen
-            )
-            self.async_on_remove(self.speaker._seen_dispatcher)
 
     @property
     def soco(self) -> SoCo:

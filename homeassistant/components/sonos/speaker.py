@@ -10,18 +10,24 @@ from pysonos.exceptions import SoCoException
 
 from homeassistant.core import HomeAssistant, callback
 import homeassistant.helpers.device_registry as dr
-from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.dispatcher import (
+    async_dispatcher_send,
+    dispatcher_connect,
+    dispatcher_send,
+)
 
 from .const import (
     DOMAIN as SONOS_DOMAIN,
     SCAN_INTERVAL,
     SEEN_EXPIRE_TIME,
     SONOS_CONTENT_UPDATE,
+    SONOS_DISCOVERY_UPDATE,
     SONOS_ENTITY_UPDATE,
     SONOS_GROUP_UPDATE,
     SONOS_MEDIA_UPDATE,
     SONOS_PLAYER_RECONNECTED,
     SONOS_PROPERTIES_UPDATE,
+    SONOS_SEEN,
     SONOS_STATE_UPDATED,
     SONOS_VOLUME_UPDATE,
 )
@@ -48,6 +54,13 @@ class SonosSpeaker:
         self.model_name = speaker_info["model_name"]
         self.version = speaker_info["software_version"]
         self.zone_name = speaker_info["zone_name"]
+
+    def setup(self) -> None:
+        """Run initial setup of the speaker."""
+        self._seen_dispatcher = dispatcher_connect(
+            self.hass, f"{SONOS_SEEN}-{self.soco.uid}", self.async_seen
+        )
+        dispatcher_send(self.hass, SONOS_DISCOVERY_UPDATE, self)
 
     @callback
     def async_write_entity_states(self) -> bool:

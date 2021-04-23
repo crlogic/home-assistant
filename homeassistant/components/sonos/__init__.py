@@ -30,7 +30,6 @@ from .const import (
     DATA_SONOS,
     DISCOVERY_INTERVAL,
     DOMAIN,
-    SONOS_DISCOVERY_UPDATE,
     SONOS_GROUP_UPDATE,
     SONOS_SEEN,
 )
@@ -128,10 +127,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
                 data = hass.data[DATA_SONOS]
 
                 if soco.uid not in data.discovered:
-                    _LOGGER.debug("Adding new entity")
+                    _LOGGER.debug("Adding new speaker")
                     speaker = SonosSpeaker(hass, soco)
                     data.discovered[soco.uid] = speaker
-                    dispatcher_send(hass, SONOS_DISCOVERY_UPDATE, speaker)
+                    speaker.setup()
                 else:
                     dispatcher_send(hass, f"{SONOS_SEEN}-{soco.uid}", soco)
 
