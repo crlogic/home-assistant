@@ -1,6 +1,7 @@
 """Base class for common speaker tasks."""
 from __future__ import annotations
 
+from asyncio import gather
 import logging
 from typing import Any, Callable
 
@@ -113,18 +114,18 @@ class SonosSpeaker:
                     f"when existing subscriptions exist: {self._subscriptions}"
                 )
 
-            await self._subscribe(self.soco.avTransport, self.async_dispatch_media)
-            await self._subscribe(
-                self.soco.renderingControl, self.async_dispatch_volume
-            )
-            await self._subscribe(
-                self.soco.contentDirectory, self.async_dispatch_content
-            )
-            await self._subscribe(
-                self.soco.zoneGroupTopology, self.async_dispatch_groups
-            )
-            await self._subscribe(
-                self.soco.deviceProperties, self.async_dispatch_properties
+            await gather(
+                self._subscribe(self.soco.avTransport, self.async_dispatch_media),
+                self._subscribe(self.soco.renderingControl, self.async_dispatch_volume),
+                self._subscribe(
+                    self.soco.contentDirectory, self.async_dispatch_content
+                ),
+                self._subscribe(
+                    self.soco.zoneGroupTopology, self.async_dispatch_groups
+                ),
+                self._subscribe(
+                    self.soco.deviceProperties, self.async_dispatch_properties
+                ),
             )
             return True
         except SoCoException as ex:
