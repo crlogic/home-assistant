@@ -9,8 +9,12 @@ from pysonos.core import SoCo
 from pysonos.events_base import Event as SonosEvent
 from pysonos.exceptions import SoCoException
 
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from homeassistant.const import DEVICE_CLASS_BATTERY, PERCENTAGE, STATE_UNKNOWN
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.dispatcher import (
+    async_dispatcher_connect,
+    async_dispatcher_send,
+)
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.icon import icon_for_battery_level
 
@@ -19,6 +23,7 @@ from .const import (
     BATTERY_SCAN_INTERVAL,
     DATA_SONOS,
     SONOS_DISCOVERY_UPDATE,
+    SONOS_ENTITY_CREATED,
     SONOS_PROPERTIES_UPDATE,
 )
 from .entity import SonosEntity
@@ -61,17 +66,12 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async def _async_create_entities(speaker: SonosSpeaker):
         if entity := await _async_create_entity(speaker):
             async_add_entities([entity])
+        else:
+            async_dispatcher_send(
+                hass, f"{SONOS_ENTITY_CREATED}-{speaker.soco.uid}", SENSOR_DOMAIN
+            )
 
     async_dispatcher_connect(hass, SONOS_DISCOVERY_UPDATE, _async_create_entities)
-
-    entities = []
-    # create any entities for devices that exist already
-    for speaker in sonos_data.discovered.values():
-        if entity := await _async_create_entity(speaker):
-            entities.append(entity)
-
-    if entities:
-        async_add_entities(entities)
 
 
 class SonosBatteryEntity(SonosEntity, Entity):
@@ -99,6 +99,9 @@ class SonosBatteryEntity(SonosEntity, Entity):
                 f"{SONOS_PROPERTIES_UPDATE}-{self.soco.uid}",
                 self.async_update_battery_info,
             )
+        )
+        async_dispatcher_send(
+            self.hass, f"{SONOS_ENTITY_CREATED}-{self.soco.uid}", SENSOR_DOMAIN
         )
 
     async def async_update_battery_info(self, event: SonosEvent = None) -> None:

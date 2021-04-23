@@ -30,6 +30,7 @@ import voluptuous as vol
 from homeassistant.components.media_player import MediaPlayerEntity
 from homeassistant.components.media_player.const import (
     ATTR_MEDIA_ENQUEUE,
+    DOMAIN as MP_DOMAIN,
     MEDIA_TYPE_ALBUM,
     MEDIA_TYPE_ARTIST,
     MEDIA_TYPE_MUSIC,
@@ -75,6 +76,7 @@ from .const import (
     PLAYABLE_MEDIA_TYPES,
     SONOS_CONTENT_UPDATE,
     SONOS_DISCOVERY_UPDATE,
+    SONOS_ENTITY_CREATED,
     SONOS_GROUP_UPDATE,
     SONOS_MEDIA_UPDATE,
     SONOS_PLAYER_RECONNECTED,
@@ -187,11 +189,6 @@ async def async_setup_entry(
             )
 
     async_dispatcher_connect(hass, SONOS_DISCOVERY_UPDATE, async_create_entities)
-
-    # create any entities for devices that exist already
-    for uid, speaker in hass.data[DATA_SONOS].discovered.items():
-        if uid not in hass.data[DATA_SONOS].media_player_entities:
-            async_add_entities([SonosMediaPlayerEntity(speaker, hass.data[DATA_SONOS])])
 
     hass.services.async_register(
         SONOS_DOMAIN,
@@ -390,6 +387,10 @@ class SonosMediaPlayerEntity(SonosEntity, MediaPlayerEntity):
 
         if self.hass.is_running:
             async_dispatcher_send(self.hass, SONOS_GROUP_UPDATE)
+
+        async_dispatcher_send(
+            self.hass, f"{SONOS_ENTITY_CREATED}-{self.soco.uid}", MP_DOMAIN
+        )
 
     @property
     def unique_id(self) -> str:

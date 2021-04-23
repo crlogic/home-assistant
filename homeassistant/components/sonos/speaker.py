@@ -18,10 +18,12 @@ from homeassistant.helpers.dispatcher import (
 
 from .const import (
     DOMAIN as SONOS_DOMAIN,
+    PLATFORMS,
     SCAN_INTERVAL,
     SEEN_EXPIRE_TIME,
     SONOS_CONTENT_UPDATE,
     SONOS_DISCOVERY_UPDATE,
+    SONOS_ENTITY_CREATED,
     SONOS_ENTITY_UPDATE,
     SONOS_GROUP_UPDATE,
     SONOS_MEDIA_UPDATE,
@@ -42,10 +44,12 @@ class SonosSpeaker:
         """Initialize a SonosSpeaker."""
         speaker_info = soco.get_speaker_info(True)
 
+        self._is_ready: bool = False
         self._subscriptions: list[SubscriptionBase] = []
         self._poll_timer: Callable | None = None
         self._seen_timer: Callable | None = None
         self._seen_dispatcher: Callable | None = None
+        self._platforms_ready: set[str] = set()
 
         self.hass: HomeAssistant = hass
         self.soco: SoCo = soco
@@ -57,10 +61,22 @@ class SonosSpeaker:
 
     def setup(self) -> None:
         """Run initial setup of the speaker."""
+        self._entity_creation_dispatcher = dispatcher_connect(
+            self.hass,
+            f"{SONOS_ENTITY_CREATED}-{self.soco.uid}",
+            self.async_handle_new_entity,
+        )
         self._seen_dispatcher = dispatcher_connect(
             self.hass, f"{SONOS_SEEN}-{self.soco.uid}", self.async_seen
         )
         dispatcher_send(self.hass, SONOS_DISCOVERY_UPDATE, self)
+
+    async def async_handle_new_entity(self, entity_type: str) -> None:
+        """Listen to new entities to trigger first subscription."""
+        self._platforms_ready.add(entity_type)
+        if self._platforms_ready == PLATFORMS:
+            await self.async_subscribe()
+            self._is_ready = True
 
     @callback
     def async_write_entity_states(self) -> bool:
@@ -87,6 +103,7 @@ class SonosSpeaker:
 
     async def async_subscribe(self) -> bool:
         """Initiate event subscriptions."""
+        _LOGGER.debug("Creating subscriptions for %s", self.zone_name)
         try:
             self.async_dispatch_player_reconnected()
 
@@ -182,11 +199,12 @@ class SonosSpeaker:
             SCAN_INTERVAL,
         )
 
-        done = await self.async_subscribe()
-        if not done:
-            assert self._seen_timer is not None
-            self._seen_timer()
-            await self.async_unseen()
+        if self._is_ready:
+            done = await self.async_subscribe()
+            if not done:
+                assert self._seen_timer is not None
+                self._seen_timer()
+                await self.async_unseen()
 
         self.async_write_entity_states()
 
