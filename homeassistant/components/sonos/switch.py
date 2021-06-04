@@ -74,7 +74,7 @@ class SonosAlarmEntity(SonosEntity, SwitchEntity):
     @property
     def alarm(self):
         """Return the alarm instance."""
-        return self.hass.data[DATA_SONOS].alarms[self.alarm_id]
+        return self.hass.data[DATA_SONOS].alarms.get(self.alarm_id)
 
     @property
     def alarm_id(self):
@@ -169,6 +169,11 @@ class SonosAlarmEntity(SonosEntity, SwitchEntity):
             or bool(recurrence == "WEEKDAYS" and int(timestr) not in [0, 7])
             or bool(recurrence == "WEEKENDS" and int(timestr) not in range(1, 7))
         )
+
+    @property
+    def available(self) -> bool:
+        """Return whether this alarm is available."""
+        return self.alarm is not None
 
     @property
     def is_on(self):
