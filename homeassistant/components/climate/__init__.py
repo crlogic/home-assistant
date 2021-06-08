@@ -185,6 +185,7 @@ class ClimateEntity(Entity):
     _attr_precision: float
     _attr_preset_mode: str | None
     _attr_preset_modes: list[str] | None
+    _attr_setpoint_precision: float | None
     _attr_supported_features: int
     _attr_swing_mode: str | None
     _attr_swing_modes: list[str] | None
@@ -210,16 +211,23 @@ class ClimateEntity(Entity):
         return PRECISION_WHOLE
 
     @property
+    def setpoint_precision(self) -> float:
+        """Return the precision of the setpoint."""
+        if hasattr(self, "_attr_setpoint_precision"):
+            return self._attr_setpoint_precision
+        return self.precision
+
+    @property
     def capability_attributes(self) -> dict[str, Any] | None:
         """Return the capability attributes."""
         supported_features = self.supported_features
         data = {
             ATTR_HVAC_MODES: self.hvac_modes,
             ATTR_MIN_TEMP: show_temp(
-                self.hass, self.min_temp, self.temperature_unit, self.precision
+                self.hass, self.min_temp, self.temperature_unit, self.setpoint_precision
             ),
             ATTR_MAX_TEMP: show_temp(
-                self.hass, self.max_temp, self.temperature_unit, self.precision
+                self.hass, self.max_temp, self.temperature_unit, self.setpoint_precision
             ),
         }
 
@@ -260,7 +268,7 @@ class ClimateEntity(Entity):
                 self.hass,
                 self.target_temperature,
                 self.temperature_unit,
-                self.precision,
+                self.setpoint_precision,
             )
 
         if supported_features & SUPPORT_TARGET_TEMPERATURE_RANGE:
@@ -268,13 +276,13 @@ class ClimateEntity(Entity):
                 self.hass,
                 self.target_temperature_high,
                 self.temperature_unit,
-                self.precision,
+                self.setpoint_precision,
             )
             data[ATTR_TARGET_TEMP_LOW] = show_temp(
                 self.hass,
                 self.target_temperature_low,
                 self.temperature_unit,
-                self.precision,
+                self.setpoint_precision,
             )
 
         if self.current_humidity is not None:
